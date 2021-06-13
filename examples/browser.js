@@ -129,8 +129,6 @@ class SimulationChart {
         chart.attr("width", this.width)
             .attr("height", this.height);
 
-        chart.text("Wibblers");
-
         this.lines = [];
         options.lines.forEach(line => {
             let lineOptions = Object.assign({}, line);
@@ -174,10 +172,14 @@ class ChartLine {
         return d3.max(data, d => this.value(d));
     }
 
+    maxAbsY (data) {
+        return d3.max(data, d => Math.abs(this.value(d)));
+    }
+
     update (simulation) {
         this.x.domain([d3.min(simulation.data, d => d.frame.t), d3.max(simulation.data, d => d.frame.t)]);
         if (this.chart.independentScale) {
-            this.y.domain([this.minY(simulation.data), this.maxY(simulation.data)]);
+            this.y.domain([-this.maxAbsY(simulation.data), this.maxAbsY(simulation.data)]);
         } else {
             this.y.domain([d3.min(this.chart.lines.map(line => line.minY(simulation.data))),
                            d3.max(this.chart.lines.map(line => line.maxY(simulation.data)))]);
