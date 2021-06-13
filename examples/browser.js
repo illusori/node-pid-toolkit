@@ -14,6 +14,7 @@ class Simulation {
     configure (options) {
         this.sP = options.sP;
         this.pV = options.initialPV;
+        this.measurementNoise = options.measurementNoise;
         this.control = 0;
         this.restrictedControl = 0;
         this.effectiveControl = 0;
@@ -36,6 +37,18 @@ class Simulation {
         this.pid.sP = this.sP;
     }
 
+    noiseFactor () {
+        return (Math.random() + Math.random()) * 0.5;
+    }
+
+    noise (n) {
+        return (2 * n * this.noiseFactor()) - n;
+    }
+
+    measuredPV () {
+        return this.pV + this.noise(this.measurementNoise);
+    }
+
     update (dT) {
         this.t += dT;
 
@@ -43,7 +56,7 @@ class Simulation {
         this.pV += this.effectiveControl * dT;
 
         // Update and display PID.
-        this.control = this.pid.update(this.pV, this.t);
+        this.control = this.pid.update(this.measuredPV(), this.t);
 
         this.restrictedControl = this.control;
         if (this.restrictedControl < 0) {
@@ -62,6 +75,7 @@ class Simulation {
 
         this.data.push({
             frame: frame,
+            pV: this.pV, // actual pV
             restrictedControl: this.restrictedControl,
             effectiveControl:  this.effectiveControl,
         });
@@ -201,8 +215,13 @@ class ValuesChart extends SimulationChart {
                     color: "steelblue",
                 },
                 {
-                    name: 'pV',
+                    name: 'measuredPV',
                     value: d => d.frame.pV,
+                    color: "pink",
+                },
+                {
+                    name: 'actualPV',
+                    value: d => d.pV,
                     color: "red",
                 },
             ],
@@ -308,6 +327,7 @@ class App {
             authorityDown: this.floatParam('authority_down'),
             saturationUp: this.floatParam('saturation_up'),
             saturationDown: this.floatParam('saturation_down'),
+            measurementNoise: this.floatParam('measurement_noise'),
         };
     }
 
