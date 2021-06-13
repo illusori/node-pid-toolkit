@@ -2,6 +2,19 @@
 <head>
 <title>PID Example</title>
 <style>
+.parameters {
+    position: absolute;
+    max-width: 200px;
+}
+
+.parameters input {
+    width: 50px;
+}
+
+.display {
+    margin-left: 200px;
+}
+
 .sim-table {
     overflow: scroll;
     max-height: 200px;
@@ -16,8 +29,27 @@ svg {
 <body>
 <h1>PID Example</h1>
 
-<section class="sim-table"></section>
+<section class="parameters">
+<form>
+<table>
+<tr><td>Initial pV</td><td><input name="initial_pv" type="text" value="0"></td></tr>
+<tr><td>sP</td><td><input name="sp" type="text" value="20"></td></tr>
+<tr><td>kP</td><td><input name="kp" type="text" value="0.1"></td></tr>
+<tr><td>tI</td><td><input name="ti" type="text" value="2"></td></tr>
+<tr><td>tD</td><td><input name="td" type="text" value="5"></td></tr>
+<tr><td>dT</td><td><input name="dt" type="text" value="1"></td></tr>
+<tr><td>Authority Up</td><td><input name="authority_up" type="text" value="10"></td></tr>
+<tr><td>Authority Down</td><td><input name="authority_down" type="text" value="7"></td></tr>
+<tr><td>Saturation Up</td><td><input name="saturation_up" type="text" value="1"></td></tr>
+<tr><td>Saturation Down</td><td><input name="saturation_down" type="text" value="-1"></td></tr>
+</table>
+</form>
+</section>
+
+<section class="display">
 <section class="sim-chart"></section>
+<section class="sim-table"></section>
+</section>
 
 <script src="https://d3js.org/d3.v6.min.js"></script>
 <script src="web.js"></script>

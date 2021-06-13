@@ -6,24 +6,27 @@
 const { PID } = require('../lib/pid');
 
 class Simulation {
-    constructor () {
-        this.sP = 20;
-        this.pV = 0;
+    constructor (options) {
+        this.configure(options);
+        this.reset();
+    }
+
+    configure (options) {
+        this.sP = options.sP;
+        this.pV = options.initialPV;
         this.control = 0;
         this.restrictedControl = 0;
         this.effectiveControl = 0;
-        this.dT = 1;
-        this.authority = [7, 10];
-        this.saturation = [-1, 1];
+        this.dT = options.dT;
+        this.authority = [options.authorityDown, options.authorityUp];
+        this.saturation = [options.saturationDown, options.saturationUp];
 
         this.pid = new PID({
           t: 0,
-          kP: 0.2,
-          tI: 2,
-          tD: 5,
+          kP: options.kP,
+          tI: options.tI,
+          tD: options.tD,
         });
-
-        this.reset();
     }
 
     reset () {
@@ -143,12 +146,6 @@ class SimulationChart {
     update (simulation) {
         this.lines.forEach(line => {
             line.update(simulation);
-            // FIXME: move the draw into ChartLine???
-            this.node.append('path')
-                .attr("fill", "none")
-                .attr("stroke", line.color)
-                .attr("stroke-width", 1.5)
-                .attr("d", line.line(simulation.data));
         });
     }
 }
@@ -156,12 +153,13 @@ class SimulationChart {
 class ChartLine {
     constructor (options) {
         Object.assign(this, options); // ew h4x
-        //'name color value x y'.split(' ').forEach(prop => {
-        //    this[prop] = options[prop];
-        //});
         this.line = d3.line()
             .x(d => this.x(d.frame.t))
             .y(d => this.y(this.value(d)));
+        this.node = this.chart.node.append('path')
+            .attr("fill", "none")
+            .attr("stroke", this.color)
+            .attr("stroke-width", 1.5);
     }
 
     minY (data) {
@@ -184,6 +182,7 @@ class ChartLine {
             this.y.domain([d3.min(this.chart.lines.map(line => line.minY(simulation.data))),
                            d3.max(this.chart.lines.map(line => line.maxY(simulation.data)))]);
         }
+        this.node.attr("d", this.line(simulation.data));
     }
 }
 
@@ -235,24 +234,88 @@ class ControlChart extends SimulationChart {
     }
 }
 
+class StateChart extends SimulationChart {
+    constructor (options) {
+        super(Object.assign({}, options, {
+            lines: [
+                {
+                    name: 'zero',
+                    value: d => 0,
+                    color: "grey",
+                },
+                {
+                    name: 'error',
+                    value: d => d.frame.error,
+                    color: "red",
+                },
+                {
+                    name: 'sumError',
+                    value: d => d.frame.sumError,
+                    color: "purple",
+                },
+                {
+                    name: 'rateError',
+                    value: d => d.frame.rateError,
+                    color: "pink",
+                },
+            ],
+        }));
+    }
+}
+
 class ResultsDisplay {
     constructor() {
         this.simulationTable = new SimulationTable();
-        this.valuesChart = new ValuesChart({ selector: ".sim-chart", width: 800, height: 400 });
-        this.controlChart = new ControlChart({ selector: ".sim-chart", width: 800, height: 200, independentScale: true });
+        this.valuesChart = new ValuesChart({ selector: ".sim-chart", width: 800, height: 300 });
+        this.controlChart = new ControlChart({ selector: ".sim-chart", width: 800, height: 150, independentScale: true });
+        this.stateChart = new StateChart({ selector: ".sim-chart", width: 800, height: 150, independentScale: true });
     }
 
     update (simulation) {
         this.simulationTable.update(simulation);
         this.valuesChart.update(simulation);
         this.controlChart.update(simulation);
+        this.stateChart.update(simulation);
     }
 }
 
 class App {
     constructor () {
-        this.simulation = new Simulation();
+        this.parametersForm = document.querySelector(".parameters form");
+        this.parametersForm.addEventListener('change', e => this.update());
+        //this.parametersForm.querySelectorAll("input").forEach(node => node.addEventListener('input', e => this.update()));
+        this.simulation = new Simulation(this.simulationOptions());
         this.resultsDisplay = new ResultsDisplay();
+    }
+
+    namedParameter (name) {
+        return this.parametersForm.querySelector(`input[name='${name}']`);
+    }
+
+    floatParam (name) {
+        return Number.parseFloat(this.namedParameter(name).value);
+    }
+
+    simulationOptions () {
+        return {
+            initialPV: this.floatParam('initial_pv'),
+            sP: this.floatParam('sp'),
+            kP: this.floatParam('kp'),
+            tI: this.floatParam('ti'),
+            tD: this.floatParam('td'),
+            dT: this.floatParam('dt'),
+            authorityUp: this.floatParam('authority_up'),
+            authorityDown: this.floatParam('authority_down'),
+            saturationUp: this.floatParam('saturation_up'),
+            saturationDown: this.floatParam('saturation_down'),
+        };
+    }
+
+    update () {
+        console.log("Updating simulation.");
+        this.simulation.configure(this.simulationOptions());
+        this.simulation.reset();
+        this.run();
     }
 
     run () {
