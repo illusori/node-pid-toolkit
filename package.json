@@ -1,0 +1,24 @@
+{
+    "name": "pid-toolkit",
+    "version": "1.0.0",
+    "description": "...",
+    "license": "",
+    "repository": "illusori/node-pid-toolkit",
+    "author": {
+        "name": "Sam Graham",
+        "email": "npm@illusori.co.uk",
+        "url": "http://www.illusori.co.uk/"
+    },
+    "main": "pid.js",
+    "engines": {
+        "node": ">=10"
+    },
+    "scripts": {},
+    "files": [
+        "."
+    ],
+    "keywords": [],
+    "dependencies": {
+    },
+    "devDependencies": {}
+}
