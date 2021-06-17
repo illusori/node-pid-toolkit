@@ -82,7 +82,7 @@ class Simulation {
     }
 
     run () {
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 60; i += this.dT) {
             this.update(this.dT);
         }
     }
@@ -146,21 +146,35 @@ class SimulationChart {
         chart.attr("width", this.width)
             .attr("height", this.height);
 
+        this.margin = { top: 10, right: 20, bottom: 20, left: 30 };
+
         this.lines = [];
         options.lines.forEach(line => {
             let lineOptions = Object.assign({}, line);
             lineOptions.chart = this;
-            lineOptions.x = d3.scaleLinear().range([0, this.width]);
-            lineOptions.y = d3.scaleLinear().range([this.height, 0]);
+            lineOptions.x = d3.scaleLinear().range([this.margin.left, this.width - this.margin.right]);
+            lineOptions.y = d3.scaleLinear().range([this.height - this.margin.bottom, this.margin.top]);
+            this.xScale = this.xScale ?? lineOptions.x;
+            this.yScale = this.yScale ?? lineOptions.y;
             // TODO: determine y range
             this.lines.push(new ChartLine(lineOptions));
         });
+
+        this.xAxis = this.node.append('g').attr("transform", `translate(0,${this.height - this.margin.bottom})`);
+        if (!this.independentScale) {
+            this.yAxis = this.node.append('g').attr("transform", `translate(${this.margin.left},0)`);
+        }
+//            .call(d3.axisBottom(this.xScale));
     }
 
     update (simulation) {
         this.lines.forEach(line => {
             line.update(simulation);
         });
+        this.xAxis.call(d3.axisBottom(this.xScale));
+        if (!this.independentScale) {
+            this.yAxis.call(d3.axisLeft(this.yScale));
+        }
     }
 }
 
@@ -301,10 +315,29 @@ class ResultsDisplay {
 class App {
     constructor () {
         this.parametersForm = document.querySelector(".parameters form");
-        this.parametersForm.addEventListener('change', e => this.update());
-        //this.parametersForm.querySelectorAll("input").forEach(node => node.addEventListener('input', e => this.update()));
         this.simulation = new Simulation(this.simulationOptions());
         this.resultsDisplay = new ResultsDisplay();
+
+        this.parametersForm.addEventListener('change', event => this.update());
+        //this.parametersForm.querySelectorAll("input").forEach(node => node.addEventListener('input', e => this.update()));
+        this.parametersForm.querySelectorAll("input").forEach(node => node.addEventListener('keyup', event => this.parameterKeyListener(event)));
+    }
+
+    parameterKeyListener (event) {
+        if (event.isComposing || event.keyCode === 229) {
+            return;
+        }
+        //console.log(`keyUp ${event.code} on ${event.target}`);
+        let val = Number.parseFloat(event.target.value);
+        if (event.code == 'ArrowUp') {
+            event.target.value = val + this.incStep(val);
+        } else if (event.code == 'ArrowDown') {
+            event.target.value = val - this.decStep(val);
+        } else {
+            return;
+        }
+        let changeEvent = new Event('change', { bubbles: true, cancellable: false });
+        event.target.dispatchEvent(changeEvent);
     }
 
     namedParameter (name) {
@@ -313,6 +346,17 @@ class App {
 
     floatParam (name) {
         return Number.parseFloat(this.namedParameter(name).value);
+    }
+
+    incStep (val) {
+        // increment in 10ths steps.
+        return 10 ** (Math.floor(Math.log10(val)) - 1);
+    }
+
+    decStep (val) {
+        // decrement needs to see if it's stepping down to a smaller scale.
+        let big = this.incStep(val), small = this.incStep(val - big);
+        return Math.min(big, small);
     }
 
     simulationOptions () {
