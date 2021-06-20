@@ -21,6 +21,10 @@ class Simulation {
         this.dT = options.dT;
         this.authority = [options.authorityDown, options.authorityUp];
         this.saturation = [options.saturationDown, options.saturationUp];
+        this.duration = options.duration;
+
+        this.setPoints = this.parseSetPoints(options.setPoints);
+        this.nextSetPoint = 0;
 
         this.pid = new PID({
           t: 0,
@@ -35,6 +39,12 @@ class Simulation {
         this.data = [];
         this.pid.reset(this.t);
         this.pid.sP = this.sP;
+    }
+
+    parseSetPoints (sequence) {
+        return sequence.split(',')
+            .map(segment => segment.split('/'))
+            .map(([when, value]) => { return { when: Number.parseFloat(when), value: Number.parseFloat(value) } });
     }
 
     noiseFactor () {
@@ -54,6 +64,12 @@ class Simulation {
 
         // Apply control to "simulation"
         this.pV += this.effectiveControl * dT;
+
+        // Apply changes in set point.
+        if ((this.nextSetPoint < this.setPoints.length) && (this.setPoints[this.nextSetPoint].when <= this.t)) {
+            this.sP = this.pid.sP = this.setPoints[this.nextSetPoint].value;
+            this.nextSetPoint++;
+        }
 
         // Update and display PID.
         this.control = this.pid.update(this.measuredPV(), this.t);
@@ -82,7 +98,7 @@ class Simulation {
     }
 
     run () {
-        for (let i = 0; i < 60; i += this.dT) {
+        for (let i = 0; i < this.duration; i += this.dT) {
             this.update(this.dT);
         }
     }
@@ -164,7 +180,6 @@ class SimulationChart {
         if (!this.independentScale) {
             this.yAxis = this.node.append('g').attr("transform", `translate(${this.margin.left},0)`);
         }
-//            .call(d3.axisBottom(this.xScale));
     }
 
     update (simulation) {
@@ -299,9 +314,9 @@ class StateChart extends SimulationChart {
 class ResultsDisplay {
     constructor() {
         this.simulationTable = new SimulationTable();
-        this.valuesChart = new ValuesChart({ selector: ".sim-chart", width: 800, height: 300 });
-        this.controlChart = new ControlChart({ selector: ".sim-chart", width: 800, height: 150, independentScale: true });
-        this.stateChart = new StateChart({ selector: ".sim-chart", width: 800, height: 150, independentScale: true });
+        this.valuesChart = new ValuesChart({ selector: ".sim-chart", width: 1200, height: 300 });
+        this.controlChart = new ControlChart({ selector: ".sim-chart", width: 1200, height: 150, independentScale: true });
+        this.stateChart = new StateChart({ selector: ".sim-chart", width: 1200, height: 150, independentScale: true });
     }
 
     update (simulation) {
@@ -341,11 +356,11 @@ class App {
     }
 
     namedParameter (name) {
-        return this.parametersForm.querySelector(`input[name='${name}']`);
+        return this.parametersForm.querySelector(`input[name='${name}']`).value;
     }
 
     floatParam (name) {
-        return Number.parseFloat(this.namedParameter(name).value);
+        return Number.parseFloat(this.namedParameter(name));
     }
 
     incStep (val) {
@@ -372,6 +387,8 @@ class App {
             saturationUp: this.floatParam('saturation_up'),
             saturationDown: this.floatParam('saturation_down'),
             measurementNoise: this.floatParam('measurement_noise'),
+            duration: this.floatParam('duration'),
+            setPoints: this.namedParameter('set_points'),
         };
     }
 
