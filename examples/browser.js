@@ -22,6 +22,7 @@ class Simulation {
         this.authority = [options.authorityDown, options.authorityUp];
         this.saturation = [options.saturationDown, options.saturationUp];
         this.duration = options.duration;
+        this.drift = options.drift;
 
         this.setPoints = this.parseSetPoints(options.setPoints);
         this.nextSetPoint = 0;
@@ -64,6 +65,9 @@ class Simulation {
 
         // Apply control to "simulation"
         this.pV += this.effectiveControl * dT;
+
+        // Apply drift.
+        this.pV += this.drift * dT;
 
         // Apply changes in set point.
         if ((this.nextSetPoint < this.setPoints.length) && (this.setPoints[this.nextSetPoint].when <= this.t)) {
@@ -388,6 +392,7 @@ class App {
             saturationDown: this.floatParam('saturation_down'),
             measurementNoise: this.floatParam('measurement_noise'),
             duration: this.floatParam('duration'),
+            drift: this.floatParam('drift'),
             setPoints: this.namedParameter('set_points'),
         };
     }
