@@ -4,6 +4,8 @@
 (function (document, window, undefined) {
 
 const { PID } = require('../lib/pid');
+const { Basic } = require('../lib/behaviours/basic');
+const { DecayingIntegral } = require('../lib/behaviours/decaying-integral');
 
 class Simulation {
     constructor (options) {
@@ -32,6 +34,10 @@ class Simulation {
           kP: options.kP,
           tI: options.tI,
           tD: options.tD,
+          behaviours: [
+            new Basic(),
+            new DecayingIntegral(),
+          ],
         });
     }
 
