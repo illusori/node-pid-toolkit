@@ -29,15 +29,20 @@ class Simulation {
         this.setPoints = this.parseSetPoints(options.setPoints);
         this.nextSetPoint = 0;
 
+        let behaviours = [new Basic()];
+        if (options.decayingIntegral) {
+            behaviours.push(new DecayingIntegral({
+                decayRate: options.decayRate,
+                threshold: options.decayThreshold,
+            }));
+        }
+
         this.pid = new PID({
           t: 0,
           kP: options.kP,
           tI: options.tI,
           tD: options.tD,
-          behaviours: [
-            new Basic(),
-            new DecayingIntegral(),
-          ],
+          behaviours: behaviours,
         });
     }
 
@@ -365,8 +370,12 @@ class App {
         event.target.dispatchEvent(changeEvent);
     }
 
+    namedInput (name) {
+        return this.parametersForm.querySelector(`input[name='${name}']`);
+    }
+
     namedParameter (name) {
-        return this.parametersForm.querySelector(`input[name='${name}']`).value;
+        return this.namedInput(name).value;
     }
 
     floatParam (name) {
@@ -400,6 +409,9 @@ class App {
             duration: this.floatParam('duration'),
             drift: this.floatParam('drift'),
             setPoints: this.namedParameter('set_points'),
+            decayingIntegral: this.namedInput('decaying_integral').checked,
+            decayRate: this.floatParam('decay_rate'),
+            decayThreshold: this.floatParam('decay_threshold'),
         };
     }
 
