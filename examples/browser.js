@@ -116,6 +116,8 @@ class Simulation {
             pV: this.pV, // actual pV
             restrictedControl: this.restrictedControl,
             effectiveControl:  this.effectiveControl,
+            pMax: this.pid.pMax(),
+            pMin: this.pid.pMin(),
         });
     }
 
@@ -274,6 +276,16 @@ class ValuesChart extends SimulationChart {
                     name: 'actualPV',
                     value: d => d.pV,
                     color: "red",
+                },
+                {
+                    name: 'pMax',
+                    value: d => d.pMax,
+                    color: "green",
+                },
+                {
+                    name: 'pMin',
+                    value: d => d.pMin,
+                    color: "green",
                 },
             ],
         }));
