@@ -62,8 +62,8 @@ class Simulation {
 
     parseSetPoints (sequence) {
         return sequence.split(',')
-            .map(segment => segment.split('/'))
-            .map(([when, value]) => { return { when: Number.parseFloat(when), value: Number.parseFloat(value) } });
+            .map(segment => segment.split('@'))
+            .map(([value, when]) => { return { when: Number.parseFloat(when), value: Number.parseFloat(value) } });
     }
 
     noiseFactor () {
