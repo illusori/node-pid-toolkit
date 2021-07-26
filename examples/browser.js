@@ -6,6 +6,7 @@
 const { PID } = require('../lib/pid');
 const { Basic } = require('../lib/behaviours/basic');
 const { DecayingIntegral } = require('../lib/behaviours/decaying-integral');
+const { AsymmetricIntegral } = require('../lib/behaviours/asymmetric-integral');
 
 class Simulation {
     constructor (options) {
@@ -34,6 +35,12 @@ class Simulation {
             behaviours.push(new DecayingIntegral({
                 decayRate: options.decayRate,
                 threshold: options.decayThreshold,
+            }));
+        }
+        if (options.asymmetricIntegral) {
+            behaviours.push(new AsymmetricIntegral({
+                divergingRate: options.divergingRate,
+                convergingRate: options.convergingRate,
             }));
         }
 
@@ -409,9 +416,14 @@ class App {
             duration: this.floatParam('duration'),
             drift: this.floatParam('drift'),
             setPoints: this.namedParameter('set_points'),
+
             decayingIntegral: this.namedInput('decaying_integral').checked,
             decayRate: this.floatParam('decay_rate'),
             decayThreshold: this.floatParam('decay_threshold'),
+
+            asymmetricIntegral: this.namedInput('asymmetric_integral').checked,
+            divergingRate: this.floatParam('diverging_rate'),
+            convergingRate: this.floatParam('converging_rate'),
         };
     }
 
