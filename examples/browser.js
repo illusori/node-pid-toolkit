@@ -7,6 +7,7 @@ const { PID } = require('../lib/pid');
 const { Basic } = require('../lib/behaviours/basic');
 const { DecayingIntegral } = require('../lib/behaviours/decaying-integral');
 const { AsymmetricIntegral } = require('../lib/behaviours/asymmetric-integral');
+const { PLimitIntegral } = require('../lib/behaviours/plimit-integral');
 
 class Simulation {
     constructor (options) {
@@ -41,6 +42,11 @@ class Simulation {
             behaviours.push(new AsymmetricIntegral({
                 divergingRate: options.divergingRate,
                 convergingRate: options.convergingRate,
+            }));
+        }
+        // Should always be last of the integral behaviours.
+        if (options.pLimitIntegral) {
+            behaviours.push(new PLimitIntegral({
             }));
         }
 
@@ -436,6 +442,8 @@ class App {
             asymmetricIntegral: this.namedInput('asymmetric_integral').checked,
             divergingRate: this.floatParam('diverging_rate'),
             convergingRate: this.floatParam('converging_rate'),
+
+            pLimitIntegral: this.namedInput('plimit_integral').checked,
         };
     }
 
