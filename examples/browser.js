@@ -135,7 +135,7 @@ class Simulation {
 }
 
 class SimulationTable {
-    constructor () {
+    constructor (options = {}) {
         const table = d3.select(".sim-table").append("table")
 
         table.append("thead").html(`<tr>
@@ -177,6 +177,15 @@ class SimulationTable {
 
         tr.exit().remove();
     }
+
+    showRuler () {
+    }
+
+    hideRuler () {
+    }
+
+    updateRuler () {
+    }
 }
 
 class SimulationChart {
@@ -185,30 +194,60 @@ class SimulationChart {
         this.width = options.width;
         this.height = options.height;
         this.independentScale = options.independentScale;
+        this.mouseOver = options.mouseOver;
+        this.mouseMove = options.mouseMove;
+        this.mouseOut = options.mouseOut;
 
-        const chart = d3.select(this.selector).append("svg")
-        this.node = chart;
-
-        chart.attr("width", this.width)
+        const svg = d3.select(this.selector).append("svg")
+        svg.attr("width", this.width)
             .attr("height", this.height);
 
         this.margin = { top: 10, right: 20, bottom: 20, left: 30 };
+        this.canvasWidth = this.width - this.margin.left - this.margin.right;
+        this.canvasHeight = this.height - this.margin.top - this.margin.bottom;
+
+        this.node = svg.append("g")
+            .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
 
         this.lines = [];
         options.lines.forEach(line => {
             let lineOptions = Object.assign({}, line);
             lineOptions.chart = this;
-            lineOptions.x = d3.scaleLinear().range([this.margin.left, this.width - this.margin.right]);
-            lineOptions.y = d3.scaleLinear().range([this.height - this.margin.bottom, this.margin.top]);
+            lineOptions.x = d3.scaleLinear().range([0, this.canvasWidth]);
+            lineOptions.y = d3.scaleLinear().range([this.canvasHeight, 0]);
             this.xScale = this.xScale ?? lineOptions.x;
             this.yScale = this.yScale ?? lineOptions.y;
             // TODO: determine y range
             this.lines.push(new ChartLine(lineOptions));
         });
 
-        this.xAxis = this.node.append('g').attr("transform", `translate(0,${this.height - this.margin.bottom})`);
+        this.ruler = this.node.append('g')
+            .append('line')
+                .style("fill", "none")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1.5)
+                .attr('x1', 0)
+                .attr('x2', 0)
+                .attr('y1', this.canvasHeight)
+                .attr('y2', 0)
+                .style("opacity", 0);
+        this.hotbox = this.node.append('rect')
+            .style("fill", "none")
+            .style("pointer-events", "all")
+            .attr('width', this.canvasWidth)
+            .attr('height', this.canvasHeight)
+            .on('mouseover', () => this.mouseOver())
+            .on('mousemove', (e) => {
+                e.preventDefault();
+                let x = d3.pointers(e)[0][0],
+                    t = this.xScale.invert(x);
+                this.mouseMove(t);
+            })
+            .on('mouseout',  () => this.mouseOut());
+
+        this.xAxis = this.node.append('g').attr("transform", `translate(0,${this.canvasHeight})`);
         if (!this.independentScale) {
-            this.yAxis = this.node.append('g').attr("transform", `translate(${this.margin.left},0)`);
+            this.yAxis = this.node.append('g'); //.attr("transform", `translate(0,0)`);
         }
     }
 
@@ -220,6 +259,24 @@ class SimulationChart {
         if (!this.independentScale) {
             this.yAxis.call(d3.axisLeft(this.yScale));
         }
+    }
+
+    showRuler () {
+        this.ruler.style("opacity", 1);
+    }
+
+    hideRuler () {
+        this.ruler.style("opacity", 0);
+    }
+
+    updateRuler (t) {
+        //let i = bisect(data, t, 1);
+        //let selectedData = data[i];
+        //let x = this.xScale(selectedData.x);
+        let x = this.xScale(t);
+        this.ruler
+            .attr("x1", x)
+            .attr("x2", x);
     }
 }
 
@@ -353,17 +410,33 @@ class StateChart extends SimulationChart {
 
 class ResultsDisplay {
     constructor() {
-        this.simulationTable = new SimulationTable();
-        this.valuesChart = new ValuesChart({ selector: ".sim-chart", width: 1200, height: 300 });
-        this.controlChart = new ControlChart({ selector: ".sim-chart", width: 1200, height: 150, independentScale: true });
-        this.stateChart = new StateChart({ selector: ".sim-chart", width: 1200, height: 150, independentScale: true });
+        let commonOptions = {
+            mouseOver: () => this.showRuler(),
+            mouseMove: t => this.updateRuler(t),
+            mouseOut: () => this.hideRuler(),
+        };
+        this.displays = [
+          this.simulationTable = new SimulationTable(Object.assign({}, commonOptions)),
+          this.valuesChart = new ValuesChart(Object.assign({ selector: ".sim-chart", width: 1200, height: 300, }, commonOptions)),
+          this.controlChart = new ControlChart(Object.assign({ selector: ".sim-chart", width: 1200, height: 150, independentScale: true, }, commonOptions)),
+          this.stateChart = new StateChart(Object.assign({ selector: ".sim-chart", width: 1200, height: 150, independentScale: true, }, commonOptions)),
+        ];
     }
 
     update (simulation) {
-        this.simulationTable.update(simulation);
-        this.valuesChart.update(simulation);
-        this.controlChart.update(simulation);
-        this.stateChart.update(simulation);
+        this.displays.forEach(d => d.update(simulation));
+    }
+
+    showRuler () {
+        this.displays.forEach(d => d.showRuler());
+    }
+
+    hideRuler () {
+        this.displays.forEach(d => d.hideRuler());
+    }
+
+    updateRuler (t) {
+        this.displays.forEach(d => d.updateRuler(t));
     }
 }
 
