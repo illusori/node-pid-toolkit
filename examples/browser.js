@@ -64,6 +64,8 @@ class Simulation {
         this.data = [];
         this.pid.reset(this.t);
         this.pid.sP = this.sP;
+
+        // FIXME: should push an initial data frame.
     }
 
     parseSetPoints (sequence) {
@@ -176,6 +178,10 @@ class SimulationTable {
             .html(dataRow);
 
         tr.exit().remove();
+
+        // A closure over the current simulation.data acting as a factory for
+        // an immediately-invoked bisector, SURE that's the simple way of doing this.
+        this.bisect = (t) => d3.bisector(d => d.frame.t).left(simulation.data, t, 1);
     }
 
     showRuler () {
@@ -184,7 +190,16 @@ class SimulationTable {
     hideRuler () {
     }
 
-    updateRuler () {
+    updateRuler (t) {
+        const i = this.bisect(t);
+        const nodes = this.node.selectAll("tr").nodes();
+        const targetNode = nodes[i];
+        //console.log(`Scrolling to t${t} row ${i} with offset ${targetNode.offsetTop}px`, targetNode);
+        nodes.forEach((node, idx) => {
+            node.className = idx == i ? 'highlight' : '';
+        });
+        // SURE this is maintainable.
+        this.node.node().parentNode.parentNode.scrollTo(0, targetNode.offsetTop - 100);
     }
 }
 
