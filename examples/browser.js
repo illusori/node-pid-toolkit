@@ -8,6 +8,8 @@ const { Basic } = require('../lib/behaviours/basic');
 const { DecayingIntegral } = require('../lib/behaviours/decaying-integral');
 const { AsymmetricIntegral } = require('../lib/behaviours/asymmetric-integral');
 const { PLimitIntegral } = require('../lib/behaviours/plimit-integral');
+const { RateErrorIgnoresSPChange } = require('../lib/behaviours/rate-error-ignores-sp-change');
+const { SmoothValue } = require('../lib/behaviours/smooth-value');
 
 class Simulation {
     constructor (options) {
@@ -19,12 +21,14 @@ class Simulation {
         this.sP = options.sP;
         this.pV = options.initialPV;
         this.measurementNoise = options.measurementNoise;
-        this.control = 0;
-        this.restrictedControl = 0;
-        this.effectiveControl = 0;
+        this.control = 0; // target control
+        this.restrictedControl = 0; // target control restricted to saturation
+        this.actualControl = 0; // actual current control subject to actuation delay
+        this.effectiveControl = 0; // actual effective current control
         this.dT = options.dT;
-        this.authority = [options.authorityDown, options.authorityUp];
         this.saturation = [options.saturationDown, options.saturationUp];
+        this.actuationFactor = options.actuationFactor;
+        this.authority = [options.authorityDown, options.authorityUp];
         this.duration = options.duration;
         this.drift = options.drift;
 
@@ -47,6 +51,40 @@ class Simulation {
         // Should always be last of the integral behaviours.
         if (options.pLimitIntegral) {
             behaviours.push(new PLimitIntegral({
+            }));
+        }
+        if (options.rateErrorIgnoresSPChange) {
+            behaviours.push(new RateErrorIgnoresSPChange({
+            }));
+        }
+        if (options.smoothedPV) {
+            behaviours.push(new SmoothValue({
+                smoothFactor: options.smoothedPVFactor,
+                value: 'pV',
+            }));
+        }
+        if (options.smoothedSP) {
+            behaviours.push(new SmoothValue({
+                smoothFactor: options.smoothedSPFactor,
+                value: 'sP',
+            }));
+        }
+        if (options.smoothedRateError) {
+            behaviours.push(new SmoothValue({
+                smoothFactor: options.smoothedRateErrorFactor,
+                value: 'rateError',
+            }));
+        }
+        if (options.smoothedError) {
+            behaviours.push(new SmoothValue({
+                smoothFactor: options.smoothedErrorFactor,
+                value: 'error',
+            }));
+        }
+        if (options.smoothedSumError) {
+            behaviours.push(new SmoothValue({
+                smoothFactor: options.smoothedSumErrorFactor,
+                value: 'sumError',
             }));
         }
 
@@ -109,12 +147,14 @@ class Simulation {
             if (this.saturation[0] !== null && this.restrictedControl < this.saturation[0]) {
                 this.restrictedControl = this.saturation[0];
             }
-            this.effectiveControl = this.restrictedControl * this.authority[0];
+            this.actualControl += (this.restrictedControl - this.actualControl) * this.actuationFactor;
+            this.effectiveControl = this.actualControl * this.authority[0];
         } else {
             if (this.saturation[1] !== null && this.restrictedControl > this.saturation[1]) {
                 this.restrictedControl = this.saturation[1];
             }
-            this.effectiveControl = this.restrictedControl * this.authority[1];
+            this.actualControl += (this.restrictedControl - this.actualControl) * this.actuationFactor;
+            this.effectiveControl = this.actualControl * this.authority[1];
         }
 
         let frame = this.pid.updateFrames[0];
@@ -123,6 +163,7 @@ class Simulation {
             frame: frame,
             pV: this.pV, // actual pV
             restrictedControl: this.restrictedControl,
+            actualControl:     this.actualControl,
             effectiveControl:  this.effectiveControl,
             pMax: this.pid.pMax(),
             pMin: this.pid.pMin(),
@@ -149,6 +190,7 @@ class SimulationTable {
             <th>rateError</th>
             <th>control</th>
             <th>restrictedControl</th>
+            <th>actualControl</th>
             <th>effectiveControl</th>
         </tr>`);
 
@@ -158,7 +200,7 @@ class SimulationTable {
     update (simulation) {
         const dataRow = (d) => {
             return `
-                <td>${d.frame.t}</td>
+                <td style="text-align: left;">${d.frame.t}</td>
                 <td>${d.frame.sP}</td>
                 <td>${d.frame.pV}</td>
                 <td>${d.frame.error}</td>
@@ -166,6 +208,7 @@ class SimulationTable {
                 <td>${d.frame.rateError}</td>
                 <td>${d.frame.control}</td>
                 <td>${d.restrictedControl}</td>
+                <td>${d.actualControl}</td>
                 <td>${d.effectiveControl}</td>
             `;
         };
@@ -380,8 +423,18 @@ class ControlChart extends SimulationChart {
                     color: "grey",
                 },
                 {
-                    name: 'control',
+                    name: 'targetControl',
                     value: d => d.frame.control,
+                    color: "skyblue",
+                },
+                {
+                    name: 'restrictedControl',
+                    value: d => d.restrictedControl,
+                    color: "steelblue",
+                },
+                {
+                    name: 'actualControl',
+                    value: d => d.actualControl,
                     color: "magenta",
                 },
                 {
@@ -514,10 +567,11 @@ class App {
             tI: this.floatParam('ti'),
             tD: this.floatParam('td'),
             dT: this.floatParam('dt'),
-            authorityUp: this.floatParam('authority_up'),
-            authorityDown: this.floatParam('authority_down'),
             saturationUp: this.floatParam('saturation_up'),
             saturationDown: this.floatParam('saturation_down'),
+            actuationFactor: this.floatParam('actuation_factor'),
+            authorityUp: this.floatParam('authority_up'),
+            authorityDown: this.floatParam('authority_down'),
             measurementNoise: this.floatParam('measurement_noise'),
             duration: this.floatParam('duration'),
             drift: this.floatParam('drift'),
@@ -532,6 +586,23 @@ class App {
             convergingRate: this.floatParam('converging_rate'),
 
             pLimitIntegral: this.namedInput('plimit_integral').checked,
+
+            rateErrorIgnoresSPChange: this.namedInput('rate_error_ignores_sp_change').checked,
+
+            smoothedPV: this.namedInput('smoothed_pv').checked,
+            smoothedPVFactor: this.floatParam('smoothed_pv_factor'),
+
+            smoothedSP: this.namedInput('smoothed_sp').checked,
+            smoothedSPFactor: this.floatParam('smoothed_sp_factor'),
+
+            smoothedRateError: this.namedInput('smoothed_rate_error').checked,
+            smoothedRateErrorFactor: this.floatParam('smoothed_rate_error_factor'),
+
+            smoothedError: this.namedInput('smoothed_error').checked,
+            smoothedErrorFactor: this.floatParam('smoothed_error_factor'),
+
+            smoothedSumError: this.namedInput('smoothed_sum_error').checked,
+            smoothedSumErrorFactor: this.floatParam('smoothed_sum_error_factor'),
         };
     }
 

@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>PID Example</title>
+<title>PID-Toolkit Sandbox</title>
 <style>
 .parameters {
     position: absolute;
@@ -18,9 +18,11 @@
 .sim-table {
     overflow: scroll;
     max-height: 200px;
+    border-collapse: collapse;
 }
 
 .sim-table thead th { position: sticky; top: 0; z-index: 1; background: #fff; }
+.sim-table tbody td { text-align: center; }
 
 .sim-table .highlight {
     background-color: yellow;
@@ -33,7 +35,7 @@ svg {
 </style>
 </head>
 <body>
-<h1>PID Example</h1>
+<h1>PID-Toolkit Sandbox</h1>
 
 <section class="parameters">
 <form>
@@ -44,29 +46,58 @@ svg {
 <tr><td>tI</td><td><input name="ti" type="text" value="10"></td></tr>
 <tr><td>tD</td><td><input name="td" type="text" value="4"></td></tr>
 <tr><td>dT</td><td><input name="dt" type="text" value="0.5"></td></tr>
-<tr><td>Authority Up</td><td><input name="authority_up" type="text" value="10"></td></tr>
-<tr><td>Authority Down</td><td><input name="authority_down" type="text" value="7"></td></tr>
+</table>
+<hr>
+<table>
 <tr><td>Saturation Up</td><td><input name="saturation_up" type="text" value="1"></td></tr>
 <tr><td>Saturation Down</td><td><input name="saturation_down" type="text" value="-1"></td></tr>
+<tr><td>Actuation Factor</td><td><input name="actuation_factor" type="text" value="0.3"></td></tr>
+<tr><td>Authority Up</td><td><input name="authority_up" type="text" value="10"></td></tr>
+<tr><td>Authority Down</td><td><input name="authority_down" type="text" value="7"></td></tr>
 <tr><td>Drift</td><td><input name="drift" type="text" value="0"></td></tr>
 <tr><td>Measurement Noise</td><td><input name="measurement_noise" type="text" value="0"></td></tr>
 <tr><td>Sim Duration</td><td><input name="duration" type="text" value="120"></td></tr>
-<tr><td colspan="2">Set Points</td></tr><tr><td colspan="2"><input name="set_points" type="text" value="20@20, 90@50, 20@90" style="width: 100%;"></td></tr>
+<tr><td colspan="2">Set Points</td></tr><tr><td colspan="2"><input name="set_points" type="text" value="20@20, 10@22, 90@50, 20@90" style="width: 100%;"></td></tr>
 </table>
 
-<label><input name="decaying_integral" type="checkbox" value="true"> Decaying Integral</label>
+<hr><label><input name="decaying_integral" type="checkbox" value="true"> Decaying Integral</label>
 <table>
 <tr><td>Decay Rate</td><td><input name="decay_rate" type="text" value="0.95"></td></tr>
 <tr><td>Decay Threshold</td><td><input name="decay_threshold" type="text" value="20"></td></tr>
 </table>
 
-<label><input name="asymmetric_integral" type="checkbox" value="true"> Asymmetric Integral</label>
+<hr><label><input name="asymmetric_integral" type="checkbox" value="true"> Asymmetric Integral</label>
 <table>
 <tr><td>Diverging Rate</td><td><input name="diverging_rate" type="text" value="1"></td></tr>
 <tr><td>Converging Rate</td><td><input name="converging_rate" type="text" value="5"></td></tr>
 </table>
 
-<label><input name="plimit_integral" type="checkbox" value="true"> pLimit Integral</label>
+<hr><label><input name="plimit_integral" type="checkbox" value="true"> pLimit Integral</label>
+
+<hr><label><input name="rate_error_ignores_sp_change" type="checkbox" value="true"> Derivative ignores SP change</label>
+
+<hr><label><input name="smoothed_pv" type="checkbox" value="true"> Smoothed Process Variable</label>
+<table>
+<tr><td>Smooth Factor</td><td><input name="smoothed_pv_factor" type="text" value="0.5"></td></tr>
+</table>
+<label><input name="smoothed_sp" type="checkbox" value="true"> Smoothed Set Point</label>
+<table>
+<tr><td>Smooth Factor</td><td><input name="smoothed_sp_factor" type="text" value="0.5"></td></tr>
+</table>
+
+<hr><label><input name="smoothed_rate_error" type="checkbox" value="true"> Smoothed Derivative</label>
+<table>
+<tr><td>Smooth Factor</td><td><input name="smoothed_rate_error_factor" type="text" value="0.5"></td></tr>
+</table>
+<label><input name="smoothed_error" type="checkbox" value="true"> Smoothed Error</label>
+<table>
+<tr><td>Smooth Factor</td><td><input name="smoothed_error_factor" type="text" value="0.5"></td></tr>
+</table>
+<label><input name="smoothed_sum_error" type="checkbox" value="true"> Smoothed Integral</label>
+<table>
+<tr><td>Smooth Factor</td><td><input name="smoothed_sum_error_factor" type="text" value="0.5"></td></tr>
+</table>
+
 </form>
 </section>
 
