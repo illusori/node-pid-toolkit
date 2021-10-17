@@ -13,6 +13,7 @@ const { SmoothValue } = require('../lib/behaviours/smooth-value');
 
 class Simulation {
     constructor (options) {
+        this.noiseSequence = new Array(1000).fill(0).map(v => (Math.random() + Math.random()) * 0.5);
         this.configure(options);
         this.reset();
     }
@@ -98,6 +99,7 @@ class Simulation {
     }
 
     reset () {
+        this.noiseOffset = 0;
         this.t = 0;
         this.data = [];
         this.pid.reset(this.t);
@@ -113,7 +115,7 @@ class Simulation {
     }
 
     noiseFactor () {
-        return (Math.random() + Math.random()) * 0.5;
+        return this.noiseSequence[this.noiseOffset++ % this.noiseSequence.length];
     }
 
     noise (n) {
