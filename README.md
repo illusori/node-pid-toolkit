@@ -14,7 +14,7 @@ Scaling to all three of these components compensates for short-comings in each.
 
 That's the theory at least, in practice there's some complications with the naive simple approach and so there's various compensation techniques that eleborate on it, but there's no commonly-accepted "perfect" approach. That's where PID-Toolkit comes in: you can pick and choose which modifications to basic behaviour you wish to apply.
 
-And because it's hard to visualise just what these changes do, it comes with an [in-browser sandbox](https://illusori.github.io/node-pid-toolkit) to visualise the effects as you toggle them on and off.
+And because it's hard to visualise just what these changes do, it comes with an [in-browser sandbox](https://illusori.github.io/node-pid-toolkit/sandbox.html) to visualise the effects as you toggle them on and off.
 
 # Install
 
