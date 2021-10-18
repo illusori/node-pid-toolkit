@@ -1,8 +1,8 @@
 {
     "name": "pid-toolkit",
     "version": "1.0.0",
-    "description": "...",
-    "license": "",
+    "description": "Flexible pluggable PID controller and toolkit.",
+    "license": "MIT",
     "repository": "illusori/node-pid-toolkit",
     "author": {
         "name": "Sam Graham",
