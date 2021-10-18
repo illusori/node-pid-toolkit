@@ -1,3 +1,2 @@
-!/examples/build
+!/docs/build
 node_modules/
-/examples/web.js
